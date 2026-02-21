@@ -1,0 +1,212 @@
+<%
+const activePage = 'budgets';
+const title = 'Budgets – ExpenseIQ';
+function inr(amount) {
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount || 0);
+}
+%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<div class="app-wrapper">
+  <%- include('partials/sidebar') %>
+  <main class="main-content">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Budget Planner</h1>
+        <p class="page-subtitle">Set monthly spending limits per category</p>
+      </div>
+      <button class="btn btn-primary" onclick="openModal('addBudgetModal')">+ Set Budget</button>
+    </div>
+
+    <div id="flashMsg" style="display:none" class="alert"></div>
+
+    <!-- Month/Year Filter -->
+    <div class="card filter-card">
+      <form method="GET" action="/budgets" class="filter-form">
+        <div class="form-group">
+          <label>Month</label>
+          <select name="month">
+            <% months.forEach((m, i) => { %>
+              <option value="<%= i+1 %>" <%= filters.month === i+1 ? 'selected' : '' %>><%= m %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Year</label>
+          <select name="year">
+            <% for(let y = currentYear; y >= currentYear - 2; y--) { %>
+              <option value="<%= y %>" <%= filters.year === y ? 'selected' : '' %>><%= y %></option>
+            <% } %>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-outline">View</button>
+      </form>
+    </div>
+
+    <!-- Budget Cards -->
+    <% if (budgets.length === 0) { %>
+      <div class="card">
+        <div class="empty-state padded">
+          <div style="font-size:3rem;margin-bottom:1rem">🎯</div>
+          <h3>No budgets set for <%= months[filters.month-1] %> <%= filters.year %></h3>
+          <p>Set monthly spending limits to track your expenses</p>
+          <button class="btn btn-primary" onclick="openModal('addBudgetModal')">Set Your First Budget</button>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="budget-grid">
+        <% budgets.forEach(b => {
+          const spent = parseFloat(b.spent || 0);
+          const budget = parseFloat(b.amount || 0);
+          const pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+          const over = spent > budget;
+          const remaining = budget - spent;
+        %>
+        <div class="budget-card <%= over ? 'over' : '' %>">
+          <div class="budget-card-header">
+            <span class="budget-cat-name"><%= b.category_name %></span>
+            <button class="btn-icon" onclick="editBudget(<%= b.id %>, <%= b.amount %>)" title="Edit">✏️</button>
+          </div>
+          <div class="budget-amounts-row">
+            <div class="budget-stat">
+              <span class="bstat-label">Spent</span>
+              <span class="bstat-value expense-text"><%= inr(spent) %></span>
+            </div>
+            <div class="budget-stat">
+              <span class="bstat-label">Budget</span>
+              <span class="bstat-value"><%= inr(budget) %></span>
+            </div>
+            <div class="budget-stat">
+              <span class="bstat-label"><%= over ? 'Over by' : 'Remaining' %></span>
+              <span class="bstat-value <%= over ? 'expense-text' : 'income-text' %>"><%= inr(Math.abs(remaining)) %></span>
+            </div>
+          </div>
+          <div class="progress-bar large">
+            <div class="progress-fill <%= pct >= 100 ? 'danger' : pct >= 80 ? 'warning' : 'safe' %>" 
+                 style="width:<%= pct %>%">
+            </div>
+          </div>
+          <div class="budget-pct"><%= pct.toFixed(0) %>% used</div>
+        </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </main>
+</div>
+
+<!-- Add Budget Modal -->
+<div id="addBudgetModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Set Budget</h3>
+      <button class="modal-close" onclick="closeModal('addBudgetModal')">✕</button>
+    </div>
+    <form method="POST" action="/budgets" class="modal-form">
+      <div class="form-group">
+        <label>Category *</label>
+        <select name="category_id" required>
+          <option value="">Select expense category</option>
+          <% categories.forEach(c => { %>
+            <option value="<%= c.id %>"><%= c.name %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Month *</label>
+        <select name="month">
+          <% months.forEach((m, i) => { %>
+            <option value="<%= i+1 %>" <%= filters.month === i+1 ? 'selected' : '' %>><%= m %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Year *</label>
+        <select name="year">
+          <% for(let y = currentYear; y >= currentYear - 2; y--) { %>
+            <option value="<%= y %>" <%= filters.year === y ? 'selected' : '' %>><%= y %></option>
+          <% } %>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Budget Amount (₹) *</label>
+        <input type="number" name="amount" min="1" step="0.01" placeholder="e.g. 10000" required/>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeModal('addBudgetModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Budget</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Budget Modal -->
+<div id="editBudgetModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Update Budget</h3>
+      <button class="modal-close" onclick="closeModal('editBudgetModal')">✕</button>
+    </div>
+    <div class="modal-form">
+      <input type="hidden" id="editBudgetId"/>
+      <div class="form-group">
+        <label>New Budget Amount (₹) *</label>
+        <input type="number" id="editBudgetAmount" min="1" step="0.01" required/>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeModal('editBudgetModal')">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="saveBudgetEdit()">Update</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+if (params.get('success')) showFlash(params.get('success'), 'success');
+if (params.get('error')) showFlash(params.get('error'), 'error');
+
+function showFlash(msg, type) {
+  const el = document.getElementById('flashMsg');
+  el.textContent = msg;
+  el.className = 'alert alert-' + type;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+function editBudget(id, amount) {
+  document.getElementById('editBudgetId').value = id;
+  document.getElementById('editBudgetAmount').value = amount;
+  openModal('editBudgetModal');
+}
+
+async function saveBudgetEdit() {
+  const id = document.getElementById('editBudgetId').value;
+  const amount = document.getElementById('editBudgetAmount').value;
+  try {
+    const res = await fetch('/budgets/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount }),
+    });
+    const data = await res.json();
+    if (data.success) { closeModal('editBudgetModal'); location.reload(); }
+    else alert(data.error || 'Failed to update');
+  } catch(e) { alert('Network error'); }
+}
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.style.display = 'none'; });
+});
+</script>
+</body>
+</html>

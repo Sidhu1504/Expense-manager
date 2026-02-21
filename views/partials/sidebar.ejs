@@ -1,0 +1,36 @@
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <span class="brand-icon">₹</span>
+    <span class="brand-name">ExpenseIQ</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="/" class="nav-item <%= typeof activePage !== 'undefined' && activePage === 'dashboard' ? 'active' : '' %>">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a href="/transactions" class="nav-item <%= typeof activePage !== 'undefined' && activePage === 'transactions' ? 'active' : '' %>">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Transactions
+    </a>
+    <a href="/budgets" class="nav-item <%= typeof activePage !== 'undefined' && activePage === 'budgets' ? 'active' : '' %>">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Budgets
+    </a>
+    <a href="/categories" class="nav-item <%= typeof activePage !== 'undefined' && activePage === 'categories' ? 'active' : '' %>">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h8m-8 6h16"/></svg>
+      Categories
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="user-avatar"><%= user ? user.name.charAt(0).toUpperCase() : 'U' %></div>
+      <div class="user-details">
+        <span class="user-name"><%= user ? user.name : '' %></span>
+        <span class="user-email"><%= user ? user.email : '' %></span>
+      </div>
+    </div>
+    <a href="/auth/logout" class="logout-btn" title="Logout">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+    </a>
+  </div>
+</aside>

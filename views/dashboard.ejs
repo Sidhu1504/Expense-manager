@@ -1,0 +1,239 @@
+<%
+const activePage = 'dashboard';
+const title = 'Dashboard – ExpenseIQ';
+const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function inr(amount) {
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount || 0);
+}
+
+const income = parseFloat(currentSummary.total_income || 0);
+const expense = parseFloat(currentSummary.total_expense || 0);
+const savings = income - expense;
+const savingsRate = income > 0 ? ((savings / income) * 100).toFixed(1) : 0;
+%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app-wrapper">
+  <%- include('partials/sidebar') %>
+  <main class="main-content">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle"><%= monthNames[currentMonth-1] %> <%= currentYear %> Overview</p>
+      </div>
+      <a href="/transactions" class="btn btn-primary">+ Add Transaction</a>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon income-icon">↑</div>
+        <div class="stat-body">
+          <span class="stat-label">Total Income</span>
+          <span class="stat-value income-text"><%= inr(income) %></span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon expense-icon">↓</div>
+        <div class="stat-body">
+          <span class="stat-label">Total Expense</span>
+          <span class="stat-value expense-text"><%= inr(expense) %></span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon savings-icon">₹</div>
+        <div class="stat-body">
+          <span class="stat-label">Net Savings</span>
+          <span class="stat-value <%= savings >= 0 ? 'income-text' : 'expense-text' %>"><%= inr(savings) %></span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon rate-icon">%</div>
+        <div class="stat-body">
+          <span class="stat-label">Savings Rate</span>
+          <span class="stat-value <%= savings >= 0 ? 'income-text' : 'expense-text' %>"><%= savingsRate %>%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-header">
+          <h3>Monthly Trend</h3>
+        </div>
+        <div class="card-body">
+          <canvas id="trendChart" height="200"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Spending by Category</h3>
+        </div>
+        <div class="card-body">
+          <canvas id="categoryChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Budget Alerts + Recent Transactions -->
+    <div class="two-col-grid">
+      <div class="card">
+        <div class="card-header">
+          <h3>Budget Status</h3>
+          <a href="/budgets" class="card-link">Manage →</a>
+        </div>
+        <div class="card-body">
+          <% if (budgetAlerts.length === 0) { %>
+            <div class="empty-state">
+              <p>No budgets set for this month</p>
+              <a href="/budgets" class="btn btn-outline btn-sm">Set Budget</a>
+            </div>
+          <% } else { %>
+            <% budgetAlerts.forEach(b => {
+              const spent = parseFloat(b.spent || 0);
+              const budget = parseFloat(b.budget || 0);
+              const pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+              const over = spent > budget;
+            %> 
+            <div class="budget-item">
+              <div class="budget-header">
+                <span class="budget-name"><%= b.name %></span>
+                <span class="budget-amounts <%= over ? 'expense-text' : '' %>">
+                  <%= inr(spent) %> / <%= inr(budget) %>
+                </span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill <%= pct >= 90 ? 'danger' : pct >= 70 ? 'warning' : 'safe' %>" 
+                     style="width:<%= pct %>%"></div>
+              </div>
+              <% if (over) { %><span class="over-budget-label">⚠ Over budget by <%= inr(spent - budget) %></span><% } %>
+            </div>
+            <% }) %>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Recent Transactions</h3>
+          <a href="/transactions" class="card-link">View All →</a>
+        </div>
+        <div class="card-body">
+          <% if (recentTransactions.length === 0) { %>
+            <div class="empty-state">
+              <p>No transactions yet</p>
+              <a href="/transactions" class="btn btn-outline btn-sm">Add Transaction</a>
+            </div>
+          <% } else { %>
+            <div class="transaction-list">
+              <% recentTransactions.forEach(t => { %>
+              <div class="transaction-item">
+                <div class="txn-icon <%= t.category_type %>-icon">
+                  <%= t.category_type === 'income' ? '↑' : '↓' %>
+                </div>
+                <div class="txn-details">
+                  <span class="txn-category"><%= t.category_name %></span>
+                  <span class="txn-desc"><%= t.description || '—' %></span>
+                </div>
+                <div class="txn-right">
+                  <span class="txn-amount <%= t.category_type === 'income' ? 'income-text' : 'expense-text' %>">
+                    <%= t.category_type === 'income' ? '+' : '-' %><%= inr(t.amount) %>
+                  </span>
+                  <span class="txn-date"><%= new Date(t.transaction_date).toLocaleDateString('en-IN', {day:'numeric',month:'short'}) %></span>
+                </div>
+              </div>
+              <% }) %>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// Monthly Trend Chart
+const summaryData = <%- JSON.stringify(summary.map(s => ({
+  month: new Date(s.month).toLocaleString('en-IN', {month:'short', year:'2-digit'}),
+  income: parseFloat(s.total_income),
+  expense: parseFloat(s.total_expense)
+})).reverse()) %>;
+
+new Chart(document.getElementById('trendChart'), {
+  type: 'bar',
+  data: {
+    labels: summaryData.map(d => d.month),
+    datasets: [
+      {
+        label: 'Income',
+        data: summaryData.map(d => d.income),
+        backgroundColor: 'rgba(34, 197, 94, 0.8)',
+        borderRadius: 4,
+      },
+      {
+        label: 'Expense',
+        data: summaryData.map(d => d.expense),
+        backgroundColor: 'rgba(239, 68, 68, 0.8)',
+        borderRadius: 4,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'top' } },
+    scales: {
+      y: {
+        ticks: {
+          callback: v => '₹' + new Intl.NumberFormat('en-IN').format(v)
+        }
+      }
+    }
+  }
+});
+
+// Category Pie Chart
+const catData = <%- JSON.stringify(categorySpend.filter(c => c.type === 'expense').slice(0,8)) %>;
+if (catData.length > 0) {
+  new Chart(document.getElementById('categoryChart'), {
+    type: 'doughnut',
+    data: {
+      labels: catData.map(c => c.name),
+      datasets: [{
+        data: catData.map(c => parseFloat(c.total)),
+        backgroundColor: [
+          '#6366f1','#f59e0b','#ef4444','#10b981','#3b82f6',
+          '#8b5cf6','#f97316','#14b8a6'
+        ],
+        borderWidth: 2,
+        borderColor: '#1e1e2e',
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'right' },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.label + ': ₹' + new Intl.NumberFormat('en-IN').format(ctx.parsed)
+          }
+        }
+      }
+    }
+  });
+} else {
+  document.getElementById('categoryChart').parentElement.innerHTML = '<div class="empty-state"><p>No expense data this month</p></div>';
+}
+</script>
+</body>
+</html>

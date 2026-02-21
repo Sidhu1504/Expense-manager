@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register – ExpenseIQ</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body class="auth-page">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo">₹</div>
+        <h1>Create Account</h1>
+        <p>Start tracking your finances today</p>
+      </div>
+
+      <% if (error) { %>
+        <div class="alert alert-error"><%= error %></div>
+      <% } %>
+
+      <form method="POST" action="/auth/register" class="auth-form">
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" name="name" placeholder="Rahul Sharma" required/>
+        </div>
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" placeholder="rahul@example.com" required/>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="Min. 6 characters" required/>
+        </div>
+        <div class="form-group">
+          <label for="confirmPassword">Confirm Password</label>
+          <input type="password" id="confirmPassword" name="confirmPassword" placeholder="••••••••" required/>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+      </form>
+
+      <p class="auth-switch">Already have an account? <a href="/auth/login">Sign in</a></p>
+    </div>
+
+    <div class="auth-illustration">
+      <div class="illustration-content">
+        <div class="feature-list">
+          <div class="feature-item">
+            <span class="feature-icon">📊</span>
+            <span>Visual spending analytics</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-icon">🎯</span>
+            <span>Monthly budget goals</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-icon">📁</span>
+            <span>CSV export reports</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-icon">🔔</span>
+            <span>Budget alerts & insights</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
