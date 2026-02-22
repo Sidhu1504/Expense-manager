@@ -86,9 +86,9 @@ const getDashboard = async (req, res) => {
       formatINR: (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount),
     });
   } catch (err) {
-    console.error('Dashboard error:', err);
-    res.render('error', { message: 'Failed to load dashboard', user: req.user });
+    console.error('Dashboard FULL error:', err.message, err.stack);
+    res.render('error', { message: 'Dashboard error: ' + err.message, user: req.user });
   }
-};
+  };
 
 module.exports = { getDashboard };

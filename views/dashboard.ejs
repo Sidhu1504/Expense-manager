@@ -1,29 +1,62 @@
 <%
 const activePage = 'dashboard';
-const title = 'Dashboard – ExpenseIQ';
-const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
 function inr(amount) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount || 0);
 }
-
 const income = parseFloat(currentSummary.total_income || 0);
 const expense = parseFloat(currentSummary.total_expense || 0);
 const savings = income - expense;
 const savingsRate = income > 0 ? ((savings / income) * 100).toFixed(1) : 0;
+const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title><%= title %></title>
+  <title>Dashboard – ExpenseIQ</title>
   <link rel="stylesheet" href="/css/style.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 <div class="app-wrapper">
-  <%- include('partials/sidebar') %>
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">₹</span>
+      <span class="brand-name">ExpenseIQ</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="/" class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a href="/transactions" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Transactions
+      </a>
+      <a href="/budgets" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        Budgets
+      </a>
+      <a href="/categories" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h8m-8 6h16"/></svg>
+        Categories
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar"><%= user ? user.name.charAt(0).toUpperCase() : 'U' %></div>
+        <div class="user-details">
+          <span class="user-name"><%= user ? user.name : '' %></span>
+          <span class="user-email"><%= user ? user.email : '' %></span>
+        </div>
+      </div>
+      <a href="/auth/logout" class="logout-btn" title="Logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </a>
+    </div>
+  </aside>
+
   <main class="main-content">
     <div class="page-header">
       <div>
@@ -33,7 +66,6 @@ const savingsRate = income > 0 ? ((savings / income) * 100).toFixed(1) : 0;
       <a href="/transactions" class="btn btn-primary">+ Add Transaction</a>
     </div>
 
-    <!-- Summary Cards -->
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon income-icon">↑</div>
@@ -65,28 +97,17 @@ const savingsRate = income > 0 ? ((savings / income) * 100).toFixed(1) : 0;
       </div>
     </div>
 
-    <!-- Charts Row -->
     <div class="charts-grid">
       <div class="card">
-        <div class="card-header">
-          <h3>Monthly Trend</h3>
-        </div>
-        <div class="card-body">
-          <canvas id="trendChart" height="200"></canvas>
-        </div>
+        <div class="card-header"><h3>Monthly Trend</h3></div>
+        <div class="card-body"><canvas id="trendChart" height="200"></canvas></div>
       </div>
-
       <div class="card">
-        <div class="card-header">
-          <h3>Spending by Category</h3>
-        </div>
-        <div class="card-body">
-          <canvas id="categoryChart" height="200"></canvas>
-        </div>
+        <div class="card-header"><h3>Spending by Category</h3></div>
+        <div class="card-body"><canvas id="categoryChart" height="200"></canvas></div>
       </div>
     </div>
 
-    <!-- Budget Alerts + Recent Transactions -->
     <div class="two-col-grid">
       <div class="card">
         <div class="card-header">
@@ -94,18 +115,18 @@ const savingsRate = income > 0 ? ((savings / income) * 100).toFixed(1) : 0;
           <a href="/budgets" class="card-link">Manage →</a>
         </div>
         <div class="card-body">
-          <% if (budgetAlerts.length === 0) { %>
+          <% if (!budgetAlerts || budgetAlerts.length === 0) { %>
             <div class="empty-state">
               <p>No budgets set for this month</p>
               <a href="/budgets" class="btn btn-outline btn-sm">Set Budget</a>
             </div>
           <% } else { %>
-            <% budgetAlerts.forEach(b => {
-              const spent = parseFloat(b.spent || 0);
-              const budget = parseFloat(b.budget || 0);
-              const pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
-              const over = spent > budget;
-            %> 
+            <% budgetAlerts.forEach(function(b) {
+              var spent = parseFloat(b.spent || 0);
+              var budget = parseFloat(b.budget || 0);
+              var pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+              var over = spent > budget;
+            %>
             <div class="budget-item">
               <div class="budget-header">
                 <span class="budget-name"><%= b.name %></span>
@@ -114,12 +135,12 @@ const savingsRate = income > 0 ? ((savings / income) * 100).toFixed(1) : 0;
                 </span>
               </div>
               <div class="progress-bar">
-                <div class="progress-fill <%= pct >= 90 ? 'danger' : pct >= 70 ? 'warning' : 'safe' %>" 
+                <div class="progress-fill <%= pct >= 90 ? 'danger' : pct >= 70 ? 'warning' : 'safe' %>"
                      style="width:<%= pct %>%"></div>
               </div>
-              <% if (over) { %><span class="over-budget-label">⚠ Over budget by <%= inr(spent - budget) %></span><% } %>
+              <% if (over) { %><span class="over-budget-label">⚠ Over by <%= inr(spent - budget) %></span><% } %>
             </div>
-            <% }) %>
+            <% }); %>
           <% } %>
         </div>
       </div>
@@ -130,14 +151,14 @@ const savingsRate = income > 0 ? ((savings / income) * 100).toFixed(1) : 0;
           <a href="/transactions" class="card-link">View All →</a>
         </div>
         <div class="card-body">
-          <% if (recentTransactions.length === 0) { %>
+          <% if (!recentTransactions || recentTransactions.length === 0) { %>
             <div class="empty-state">
               <p>No transactions yet</p>
               <a href="/transactions" class="btn btn-outline btn-sm">Add Transaction</a>
             </div>
           <% } else { %>
             <div class="transaction-list">
-              <% recentTransactions.forEach(t => { %>
+              <% recentTransactions.forEach(function(t) { %>
               <div class="transaction-item">
                 <div class="txn-icon <%= t.category_type %>-icon">
                   <%= t.category_type === 'income' ? '↑' : '↓' %>
@@ -153,7 +174,7 @@ const savingsRate = income > 0 ? ((savings / income) * 100).toFixed(1) : 0;
                   <span class="txn-date"><%= new Date(t.transaction_date).toLocaleDateString('en-IN', {day:'numeric',month:'short'}) %></span>
                 </div>
               </div>
-              <% }) %>
+              <% }); %>
             </div>
           <% } %>
         </div>
@@ -163,71 +184,45 @@ const savingsRate = income > 0 ? ((savings / income) * 100).toFixed(1) : 0;
 </div>
 
 <script>
-// Monthly Trend Chart
-const summaryData = <%- JSON.stringify(summary.map(s => ({
+var summaryData = <%- JSON.stringify(summary.map(function(s) { return {
   month: new Date(s.month).toLocaleString('en-IN', {month:'short', year:'2-digit'}),
   income: parseFloat(s.total_income),
   expense: parseFloat(s.total_expense)
-})).reverse()) %>;
+}; }).reverse()) %>;
 
-new Chart(document.getElementById('trendChart'), {
-  type: 'bar',
-  data: {
-    labels: summaryData.map(d => d.month),
-    datasets: [
-      {
-        label: 'Income',
-        data: summaryData.map(d => d.income),
-        backgroundColor: 'rgba(34, 197, 94, 0.8)',
-        borderRadius: 4,
-      },
-      {
-        label: 'Expense',
-        data: summaryData.map(d => d.expense),
-        backgroundColor: 'rgba(239, 68, 68, 0.8)',
-        borderRadius: 4,
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    plugins: { legend: { position: 'top' } },
-    scales: {
-      y: {
-        ticks: {
-          callback: v => '₹' + new Intl.NumberFormat('en-IN').format(v)
-        }
-      }
+if (summaryData.length > 0) {
+  new Chart(document.getElementById('trendChart'), {
+    type: 'bar',
+    data: {
+      labels: summaryData.map(function(d) { return d.month; }),
+      datasets: [
+        { label: 'Income', data: summaryData.map(function(d) { return d.income; }), backgroundColor: 'rgba(34,197,94,0.8)', borderRadius: 4 },
+        { label: 'Expense', data: summaryData.map(function(d) { return d.expense; }), backgroundColor: 'rgba(239,68,68,0.8)', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top' } },
+      scales: { y: { ticks: { callback: function(v) { return '₹' + new Intl.NumberFormat('en-IN').format(v); } } } }
     }
-  }
-});
+  });
+} else {
+  document.getElementById('trendChart').parentElement.innerHTML = '<div class="empty-state"><p>No data yet — add transactions to see trend</p></div>';
+}
 
-// Category Pie Chart
-const catData = <%- JSON.stringify(categorySpend.filter(c => c.type === 'expense').slice(0,8)) %>;
+var catData = <%- JSON.stringify((categorySpend || []).filter(function(c) { return c.type === 'expense'; }).slice(0,8)) %>;
 if (catData.length > 0) {
   new Chart(document.getElementById('categoryChart'), {
     type: 'doughnut',
     data: {
-      labels: catData.map(c => c.name),
-      datasets: [{
-        data: catData.map(c => parseFloat(c.total)),
-        backgroundColor: [
-          '#6366f1','#f59e0b','#ef4444','#10b981','#3b82f6',
-          '#8b5cf6','#f97316','#14b8a6'
-        ],
-        borderWidth: 2,
-        borderColor: '#1e1e2e',
-      }]
+      labels: catData.map(function(c) { return c.name; }),
+      datasets: [{ data: catData.map(function(c) { return parseFloat(c.total); }), backgroundColor: ['#6366f1','#f59e0b','#ef4444','#10b981','#3b82f6','#8b5cf6','#f97316','#14b8a6'], borderWidth: 2, borderColor: '#1e1e2e' }]
     },
     options: {
       responsive: true,
       plugins: {
         legend: { position: 'right' },
-        tooltip: {
-          callbacks: {
-            label: ctx => ctx.label + ': ₹' + new Intl.NumberFormat('en-IN').format(ctx.parsed)
-          }
-        }
+        tooltip: { callbacks: { label: function(ctx) { return ctx.label + ': ₹' + new Intl.NumberFormat('en-IN').format(ctx.parsed); } } }
       }
     }
   });

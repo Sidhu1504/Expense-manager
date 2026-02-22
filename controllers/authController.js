@@ -73,7 +73,7 @@ const register = async (req, res) => {
     res.cookie('token', token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,
     });
 
     res.redirect('/');
@@ -113,14 +113,14 @@ const login = async (req, res) => {
     res.cookie('token', token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,
     });
 
     res.redirect('/');
   } catch (err) {
-    console.error('Login error:', err);
-    res.render('login', { error: 'Login failed. Please try again.', user: null });
-  }
+  console.error('Register error FULL:', err.message, err.code);
+  res.render('register', { error: `Registration failed: ${err.message}`, user: null });
+	}
 };
 
 const logout = (req, res) => {
